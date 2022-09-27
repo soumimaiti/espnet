@@ -13,6 +13,7 @@ from espnet2.asr.ctc import CTC
 from espnet2.asr.encoder.abs_encoder import AbsEncoder
 from espnet.nets.pytorch_backend.conformer.convolution import ConvolutionModule
 from espnet.nets.pytorch_backend.conformer.encoder_layer import EncoderLayer
+from espnet.nets.pytorch_backend.conformer.adapter_encoder_layer import AdapterEncoderLayer
 from espnet.nets.pytorch_backend.nets_utils import get_activation, make_pad_mask
 from espnet.nets.pytorch_backend.transformer.attention import (
     LegacyRelPositionMultiHeadedAttention,
@@ -105,6 +106,7 @@ class ConformerEncoder(AbsEncoder):
         padding_idx: int = -1,
         interctc_layer_idx: List[int] = [],
         interctc_use_conditioning: bool = False,
+        use_adapters: bool = True, 
         stochastic_depth_rate: Union[float, List[float]] = 0.0,
     ):
         assert check_argument_types()
@@ -259,7 +261,8 @@ class ConformerEncoder(AbsEncoder):
                 f"Length of stochastic_depth_rate ({len(stochastic_depth_rate)}) "
                 f"should be equal to num_blocks ({num_blocks})"
             )
-
+        if use_adapters:
+            EncoderLayer = AdapterEncoderLayer   
         self.encoders = repeat(
             num_blocks,
             lambda lnum: EncoderLayer(
