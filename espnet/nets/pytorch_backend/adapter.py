@@ -7,6 +7,7 @@ class Adapter(nn.Module):
         orig_dim: int,
         down_dim: int,
         layer_norm: str = None,
+        layer_norm_opt: str = None,
         activation_fn: str = "gelu",
     ) -> None:
         """
@@ -16,13 +17,14 @@ class Adapter(nn.Module):
         * activation_fn - activation type (default="gelu").
         """
         super().__init__()
-        self.layer_norm_opt = "last"
+        self.layer_norm_opt = layer_norm
         self.down_projection = nn.Linear(orig_dim, down_dim)
         self.up_projection = nn.Linear(down_dim, orig_dim)
         nn.init.xavier_uniform_(self.down_projection.weight)
         nn.init.xavier_uniform_(self.up_projection.weight)
         self.activation = nn.GELU()
-        self.layer_norm = nn.LayerNorm(orig_dim)
+        if layer_norm_opt:
+            self.layer_norm = nn.LayerNorm(orig_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.layer_norm_opt == "first":
