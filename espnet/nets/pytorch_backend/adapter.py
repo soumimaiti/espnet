@@ -2,15 +2,6 @@ import torch
 import torch.nn as nn
 
 
-try:
-    from fairseq import utils
-    from fairseq.modules import LayerNorm
-
-    is_fairseq_available = True
-except ImportError:
-    is_fairseq_available = False
-
-
 class Adapter(nn.Module):
     def __init__(
         self,
