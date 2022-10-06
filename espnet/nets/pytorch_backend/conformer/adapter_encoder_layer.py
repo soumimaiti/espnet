@@ -54,7 +54,7 @@ class AdapterEncoderLayer(nn.Module):
         adapter_down_dim: int = 192
     ):
         """Construct an EncoderLayer object."""
-        super(EncoderLayer, self).__init__()
+        super(AdapterEncoderLayer, self).__init__()
         self.self_attn = self_attn
         self.feed_forward = feed_forward
         self.feed_forward_macaron = feed_forward_macaron
