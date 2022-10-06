@@ -26,12 +26,6 @@ class Adapter(nn.Module):
         * activation_fn - activation type (default="gelu").
         """
         super().__init__()
-        if not is_fairseq_available:
-            raise ImportError(
-                "`fairseq` is not available. Please install it via `pip install"
-                " fairseq` or `cd /path/to/espnet/tools && . ./activate_python.sh"
-                " && ./installers/install_fairseq.sh`."
-            )
 
         self.down_projection = nn.Linear(orig_dim, down_dim)
         self.up_projection = nn.Linear(down_dim, orig_dim)
