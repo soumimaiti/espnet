@@ -11,7 +11,7 @@ import torch
 from torch import nn
 
 from espnet.nets.pytorch_backend.transformer.layer_norm import LayerNorm
-
+from espnet.nets.pytorch_backend.adapter import Adapter
 
 class AdapterEncoderLayer(nn.Module):
     """Encoder layer module.
