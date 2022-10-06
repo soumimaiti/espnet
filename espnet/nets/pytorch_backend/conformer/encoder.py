@@ -7,7 +7,8 @@
 import logging
 
 import torch
-
+#Adapter related 
+from espnet.nets.pytorch_backend.conformer.adapter_encoder_layer import AdapterEncoderLayer
 from espnet.nets.pytorch_backend.conformer.convolution import ConvolutionModule
 from espnet.nets.pytorch_backend.conformer.encoder_layer import EncoderLayer
 from espnet.nets.pytorch_backend.nets_utils import get_activation
@@ -98,6 +99,7 @@ class Encoder(torch.nn.Module):
         intermediate_layers=None,
         ctc_softmax=None,
         conditioning_layer_dim=None,
+        use_adapters=True
     ):
         """Construct an Encoder object."""
         super(Encoder, self).__init__()
@@ -214,8 +216,24 @@ class Encoder(torch.nn.Module):
         # convolution module definition
         convolution_layer = ConvolutionModule
         convolution_layer_args = (attention_dim, cnn_module_kernel, activation)
-
-        self.encoders = repeat(
+        self.use_adapters = use_adapters
+        if self.use_adapters:    
+            self.encoders = repeat(
+            num_blocks,
+            lambda lnum: AdapterEncoderLayer(
+                attention_dim,
+                encoder_selfattn_layer(*encoder_selfattn_layer_args),
+                positionwise_layer(*positionwise_layer_args),
+                positionwise_layer(*positionwise_layer_args) if macaron_style else None,
+                convolution_layer(*convolution_layer_args) if use_cnn_module else None,
+                dropout_rate,
+                normalize_before,
+                concat_after,
+                stochastic_depth_rate * float(1 + lnum) / num_blocks,
+            ),
+            )
+        else:
+            self.encoders = repeat(
             num_blocks,
             lambda lnum: EncoderLayer(
                 attention_dim,
@@ -228,7 +246,9 @@ class Encoder(torch.nn.Module):
                 concat_after,
                 stochastic_depth_rate * float(1 + lnum) / num_blocks,
             ),
-        )
+            )
+            
+            
         if self.normalize_before:
             self.after_norm = LayerNorm(attention_dim)
 
