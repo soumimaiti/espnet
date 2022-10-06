@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-
-
+import torch.nn.GELU as Gelu
+import torch.nn.LayerNorm as LayerNorm
 class Adapter(nn.Module):
     def __init__(
         self,
@@ -22,7 +22,8 @@ class Adapter(nn.Module):
         self.up_projection = nn.Linear(down_dim, orig_dim)
         nn.init.xavier_uniform_(self.down_projection.weight)
         nn.init.xavier_uniform_(self.up_projection.weight)
-        self.activation = utils.get_activation_fn(activation_fn)
+        self.activation = Gelu
+        #utils.get_activation_fn(activation_fn)
 
         self.layer_norm_opt = layer_norm
         if layer_norm is not None:
