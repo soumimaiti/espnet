@@ -16,7 +16,7 @@ class Adapter(nn.Module):
         * activation_fn - activation type (default="gelu").
         """
         super().__init__()
-
+        self.layer_norm_opt = "last"
         self.down_projection = nn.Linear(orig_dim, down_dim)
         self.up_projection = nn.Linear(down_dim, orig_dim)
         nn.init.xavier_uniform_(self.down_projection.weight)
