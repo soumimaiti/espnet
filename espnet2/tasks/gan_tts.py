@@ -361,6 +361,13 @@ class GANTTSTask(AbsTask):
             tts=tts,
             **args.model_conf,
         )
+        #freeze everything except adapters 
+        for name, param in model.named_parameters():
+            if "adapter1" in name or "adapter2" in name:
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
+                
         assert check_return_type(model)
         return model
 
