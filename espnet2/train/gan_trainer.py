@@ -140,10 +140,14 @@ class GANTrainer(Trainer):
                 continue
 
             turn_start_time = time.perf_counter()
+            #TODO add in options 
+            adapter_enabled = True 
+            
             if generator_first:
                 turns = ["generator", "discriminator"]
             else:
                 turns = ["discriminator", "generator"]
+                
             for turn in turns:
                 with autocast(scaler is not None):
                     with reporter.measure_time(f"{turn}_forward_time"):
@@ -202,15 +206,16 @@ class GANTrainer(Trainer):
                 reporter.register(stats, weight)
 
                 with reporter.measure_time(f"{turn}_backward_time"):
-                    if scaler is not None:
+                    if turn == "generator":
+                        if scaler is not None:
                         # Scales loss.  Calls backward() on scaled loss
                         # to create scaled gradients.
                         # Backward passes under autocast are not recommended.
                         # Backward ops run in the same dtype autocast chose
                         # for corresponding forward ops.
-                        scaler.scale(loss).backward()
-                    else:
-                        loss.backward()
+                            scaler.scale(loss).backward()
+                        else:
+                            loss.backward()
 
                 if scaler is not None:
                     # Unscales the gradients of optimizer's assigned params in-place
