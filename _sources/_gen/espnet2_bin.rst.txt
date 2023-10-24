@@ -276,7 +276,8 @@ asr_train.py
                         [--wandb_id WANDB_ID] [--wandb_entity WANDB_ENTITY]
                         [--wandb_name WANDB_NAME]
                         [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
-                        [--detect_anomaly DETECT_ANOMALY]
+                        [--detect_anomaly DETECT_ANOMALY] [--use_lora USE_LORA]
+                        [--save_lora_only SAVE_LORA_ONLY] [--lora_conf LORA_CONF]
                         [--pretrain_path PRETRAIN_PATH]
                         [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                         [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -304,6 +305,7 @@ asr_train.py
                         [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                         [--max_cache_size MAX_CACHE_SIZE]
                         [--max_cache_fd MAX_CACHE_FD]
+                        [--allow_multi_rates ALLOW_MULTI_RATES]
                         [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                         [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                         [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -459,6 +461,11 @@ asr_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -585,6 +592,17 @@ asr_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -689,6 +707,8 @@ asr_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -952,6 +972,9 @@ asr_transducer_train.py
                                    [--wandb_name WANDB_NAME]
                                    [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
                                    [--detect_anomaly DETECT_ANOMALY]
+                                   [--use_lora USE_LORA]
+                                   [--save_lora_only SAVE_LORA_ONLY]
+                                   [--lora_conf LORA_CONF]
                                    [--pretrain_path PRETRAIN_PATH]
                                    [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                                    [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -979,6 +1002,7 @@ asr_transducer_train.py
                                    [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                                    [--max_cache_size MAX_CACHE_SIZE]
                                    [--max_cache_fd MAX_CACHE_FD]
+                                   [--allow_multi_rates ALLOW_MULTI_RATES]
                                    [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                                    [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                                    [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -1123,6 +1147,11 @@ asr_transducer_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -1249,6 +1278,17 @@ asr_transducer_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -1353,6 +1393,8 @@ asr_transducer_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -1559,7 +1601,8 @@ diar_train.py
                          [--wandb_id WANDB_ID] [--wandb_entity WANDB_ENTITY]
                          [--wandb_name WANDB_NAME]
                          [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
-                         [--detect_anomaly DETECT_ANOMALY]
+                         [--detect_anomaly DETECT_ANOMALY] [--use_lora USE_LORA]
+                         [--save_lora_only SAVE_LORA_ONLY] [--lora_conf LORA_CONF]
                          [--pretrain_path PRETRAIN_PATH]
                          [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                          [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -1587,6 +1630,7 @@ diar_train.py
                          [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                          [--max_cache_size MAX_CACHE_SIZE]
                          [--max_cache_fd MAX_CACHE_FD]
+                         [--allow_multi_rates ALLOW_MULTI_RATES]
                          [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                          [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                          [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -1721,6 +1765,11 @@ diar_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -1847,6 +1896,17 @@ diar_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -1951,6 +2011,8 @@ diar_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -2222,6 +2284,9 @@ enh_s2t_train.py
                             [--wandb_name WANDB_NAME]
                             [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
                             [--detect_anomaly DETECT_ANOMALY]
+                            [--use_lora USE_LORA]
+                            [--save_lora_only SAVE_LORA_ONLY]
+                            [--lora_conf LORA_CONF]
                             [--pretrain_path PRETRAIN_PATH]
                             [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                             [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -2249,6 +2314,7 @@ enh_s2t_train.py
                             [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                             [--max_cache_size MAX_CACHE_SIZE]
                             [--max_cache_fd MAX_CACHE_FD]
+                            [--allow_multi_rates ALLOW_MULTI_RATES]
                             [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                             [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                             [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -2280,7 +2346,7 @@ enh_s2t_train.py
                             [--text_name TEXT_NAME [TEXT_NAME ...]]
                             [--enh_encoder {stft,conv,same}]
                             [--enh_encoder_conf ENH_ENCODER_CONF]
-                            [--enh_separator {asteroid,conformer,dan,dc_crn,dccrn,dpcl,dpcl_e2e,dprnn,dptnet,fasnet,rnn,skim,svoice,tcn,transformer,wpe_beamformer,tcn_nomask,ineube,tfgridnet}]
+                            [--enh_separator {asteroid,conformer,dan,dc_crn,dccrn,dpcl,dpcl_e2e,dprnn,dptnet,fasnet,rnn,skim,svoice,tcn,transformer,wpe_beamformer,tcn_nomask,ineube,tfgridnet,tfgridnetv2}]
                             [--enh_separator_conf ENH_SEPARATOR_CONF]
                             [--enh_decoder {stft,conv,same}]
                             [--enh_decoder_conf ENH_DECODER_CONF]
@@ -2302,11 +2368,11 @@ enh_s2t_train.py
                             [--asr_decoder_conf ASR_DECODER_CONF]
                             [--st_preencoder {sinc,linear,None}]
                             [--st_preencoder_conf ST_PREENCODER_CONF]
-                            [--st_encoder {conformer,transformer,contextual_block_transformer,contextual_block_conformer,vgg_rnn,rnn,wav2vec2,hubert,hubert_pretrain,branchformer,e_branchformer}]
+                            [--st_encoder {conformer,transformer,contextual_block_transformer,contextual_block_conformer,vgg_rnn,rnn,wav2vec2,hubert,hubert_pretrain,branchformer,e_branchformer,whisper}]
                             [--st_encoder_conf ST_ENCODER_CONF]
                             [--st_postencoder {hugging_face_transformers,length_adaptor,None}]
                             [--st_postencoder_conf ST_POSTENCODER_CONF]
-                            [--st_decoder {transformer,transformer_md,lightweight_conv,lightweight_conv2d,dynamic_conv,dynamic_conv2d,rnn,transducer,hugging_face_transformers}]
+                            [--st_decoder {transformer,transformer_md,lightweight_conv,lightweight_conv2d,dynamic_conv,dynamic_conv2d,rnn,transducer,whisper,hugging_face_transformers}]
                             [--st_decoder_conf ST_DECODER_CONF]
                             [--st_extra_asr_decoder {transformer,transformer_md,lightweight_conv,lightweight_conv2d,dynamic_conv,dynamic_conv2d,rnn,None}]
                             [--st_extra_asr_decoder_conf ST_EXTRA_ASR_DECODER_CONF]
@@ -2438,6 +2504,11 @@ enh_s2t_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -2564,6 +2635,17 @@ enh_s2t_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -2668,6 +2750,8 @@ enh_s2t_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -2703,11 +2787,11 @@ enh_s2t_train.py
       --diar_input_size DIAR_INPUT_SIZE
                             The number of input dimension of the feature (default: None)
       --enh_model_conf ENH_MODEL_CONF
-                            The keyword arguments for enh submodel class. (default: {'stft_consistency': False, 'loss_type': 'mask_mse', 'mask_type': None, 'extract_feats_in_collect_stats': False})
+                            The keyword arguments for enh submodel class. (default: {'stft_consistency': False, 'loss_type': 'mask_mse', 'mask_type': None, 'flexible_numspk': False, 'extract_feats_in_collect_stats': False})
       --asr_model_conf ASR_MODEL_CONF
                             The keyword arguments for asr submodel class. (default: {'aux_ctc': None, 'ctc_weight': 0.5, 'interctc_weight': 0.0, 'ignore_id': -1, 'lsm_weight': 0.0, 'length_normalized_loss': False, 'report_cer': True, 'report_wer': True, 'sym_space': '<space>', 'sym_blank': '<blank>', 'transducer_multi_blank_durations': [], 'transducer_multi_blank_sigma': 0.05, 'sym_sos': '<sos/eos>', 'sym_eos': '<sos/eos>', 'extract_feats_in_collect_stats': True, 'lang_token_id': -1})
       --st_model_conf ST_MODEL_CONF
-                            The keyword arguments for st submodel class. (default: {'stft_consistency': False, 'loss_type': 'mask_mse', 'mask_type': None, 'extract_feats_in_collect_stats': False})
+                            The keyword arguments for st submodel class. (default: {'stft_consistency': False, 'loss_type': 'mask_mse', 'mask_type': None, 'flexible_numspk': False, 'extract_feats_in_collect_stats': False})
       --diar_model_conf DIAR_MODEL_CONF
                             The keyword arguments for diar submodel class. (default: {'diar_weight': 1.0, 'attractor_weight': 1.0})
       --subtask_series {enh,asr,st,diar} [{enh,asr,st,diar} ...]
@@ -2738,7 +2822,7 @@ enh_s2t_train.py
                             The enh_encoder type (default: stft)
       --enh_encoder_conf ENH_ENCODER_CONF
                             The keyword arguments for enh_encoder (default: {})
-      --enh_separator {asteroid,conformer,dan,dc_crn,dccrn,dpcl,dpcl_e2e,dprnn,dptnet,fasnet,rnn,skim,svoice,tcn,transformer,wpe_beamformer,tcn_nomask,ineube,tfgridnet}
+      --enh_separator {asteroid,conformer,dan,dc_crn,dccrn,dpcl,dpcl_e2e,dprnn,dptnet,fasnet,rnn,skim,svoice,tcn,transformer,wpe_beamformer,tcn_nomask,ineube,tfgridnet,tfgridnetv2}
                             The enh_separator type (default: rnn)
       --enh_separator_conf ENH_SEPARATOR_CONF
                             The keyword arguments for enh_separator (default: {})
@@ -2782,7 +2866,7 @@ enh_s2t_train.py
                             The st_preencoder type (default: None)
       --st_preencoder_conf ST_PREENCODER_CONF
                             The keyword arguments for st_preencoder (default: {})
-      --st_encoder {conformer,transformer,contextual_block_transformer,contextual_block_conformer,vgg_rnn,rnn,wav2vec2,hubert,hubert_pretrain,branchformer,e_branchformer}
+      --st_encoder {conformer,transformer,contextual_block_transformer,contextual_block_conformer,vgg_rnn,rnn,wav2vec2,hubert,hubert_pretrain,branchformer,e_branchformer,whisper}
                             The st_encoder type (default: rnn)
       --st_encoder_conf ST_ENCODER_CONF
                             The keyword arguments for st_encoder (default: {})
@@ -2790,7 +2874,7 @@ enh_s2t_train.py
                             The st_postencoder type (default: None)
       --st_postencoder_conf ST_POSTENCODER_CONF
                             The keyword arguments for st_postencoder (default: {})
-      --st_decoder {transformer,transformer_md,lightweight_conv,lightweight_conv2d,dynamic_conv,dynamic_conv2d,rnn,transducer,hugging_face_transformers}
+      --st_decoder {transformer,transformer_md,lightweight_conv,lightweight_conv2d,dynamic_conv,dynamic_conv2d,rnn,transducer,whisper,hugging_face_transformers}
                             The st_decoder type (default: rnn)
       --st_decoder_conf ST_DECODER_CONF
                             The keyword arguments for st_decoder (default: {})
@@ -2937,7 +3021,8 @@ enh_train.py
                         [--wandb_id WANDB_ID] [--wandb_entity WANDB_ENTITY]
                         [--wandb_name WANDB_NAME]
                         [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
-                        [--detect_anomaly DETECT_ANOMALY]
+                        [--detect_anomaly DETECT_ANOMALY] [--use_lora USE_LORA]
+                        [--save_lora_only SAVE_LORA_ONLY] [--lora_conf LORA_CONF]
                         [--pretrain_path PRETRAIN_PATH]
                         [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                         [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -2965,6 +3050,7 @@ enh_train.py
                         [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                         [--max_cache_size MAX_CACHE_SIZE]
                         [--max_cache_fd MAX_CACHE_FD]
+                        [--allow_multi_rates ALLOW_MULTI_RATES]
                         [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                         [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                         [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -2986,10 +3072,13 @@ enh_train.py
                         [--force_single_channel FORCE_SINGLE_CHANNEL]
                         [--channel_reordering CHANNEL_REORDERING]
                         [--categories CATEGORIES [CATEGORIES ...]]
+                        [--speech_segment SPEECH_SEGMENT]
+                        [--avoid_allzero_segment AVOID_ALLZERO_SEGMENT]
+                        [--flexible_numspk FLEXIBLE_NUMSPK]
                         [--dynamic_mixing DYNAMIC_MIXING] [--utt2spk UTT2SPK]
                         [--dynamic_mixing_gain_db DYNAMIC_MIXING_GAIN_DB]
                         [--encoder {stft,conv,same}] [--encoder_conf ENCODER_CONF]
-                        [--separator {asteroid,conformer,dan,dc_crn,dccrn,dpcl,dpcl_e2e,dprnn,dptnet,fasnet,rnn,skim,svoice,tcn,transformer,wpe_beamformer,tcn_nomask,ineube,tfgridnet}]
+                        [--separator {asteroid,conformer,dan,dc_crn,dccrn,dpcl,dpcl_e2e,dprnn,dptnet,fasnet,rnn,skim,svoice,tcn,transformer,wpe_beamformer,tcn_nomask,ineube,tfgridnet,tfgridnetv2}]
                         [--separator_conf SEPARATOR_CONF]
                         [--decoder {stft,conv,same}] [--decoder_conf DECODER_CONF]
                         [--mask_module {multi_mask}]
@@ -3108,6 +3197,11 @@ enh_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -3234,6 +3328,17 @@ enh_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -3338,6 +3443,8 @@ enh_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -3360,7 +3467,7 @@ enh_train.py
       --init {chainer,xavier_uniform,xavier_normal,kaiming_uniform,kaiming_normal,None}
                             The initialization method (default: None)
       --model_conf MODEL_CONF
-                            The keyword arguments for model class. (default: {'stft_consistency': False, 'loss_type': 'mask_mse', 'mask_type': None, 'extract_feats_in_collect_stats': False})
+                            The keyword arguments for model class. (default: {'stft_consistency': False, 'loss_type': 'mask_mse', 'mask_type': None, 'flexible_numspk': False, 'extract_feats_in_collect_stats': False})
       --criterions CRITERIONS
                             The criterions binded with the loss wrappers. (default: [{'name': 'si_snr', 'conf': {}, 'wrapper': 'fixed_order', 'wrapper_conf': {}}])
     
@@ -3393,6 +3500,12 @@ enh_train.py
                             Whether to randomly reorder the channels of the multi-channel signals. (default: False)
       --categories CATEGORIES [CATEGORIES ...]
                             The set of all possible categories in the dataset. Used to add the category information to each sample (default: [])
+      --speech_segment SPEECH_SEGMENT
+                            Truncate the audios to the specified length (in samples) if not None (default: None)
+      --avoid_allzero_segment AVOID_ALLZERO_SEGMENT
+                            Only used when --speech_segment is specified. If True, make sure all truncated segments are not all-zero (default: True)
+      --flexible_numspk FLEXIBLE_NUMSPK
+                            Whether to load variable numbers of speakers in each sample. In this case, only the first-speaker files such as 'spk1.scp' and 'dereverb1.scp' are used, which are expected to have multiple columns. Other numbered files such as 'spk2.scp' and 'dereverb2.scp' are ignored. (default: False)
       --dynamic_mixing DYNAMIC_MIXING
                             Apply dynamic mixing (default: False)
       --utt2spk UTT2SPK     The file path of utt2spk file. Only used in dynamic_mixing mode. (default: None)
@@ -3402,7 +3515,7 @@ enh_train.py
                             The encoder type (default: stft)
       --encoder_conf ENCODER_CONF
                             The keyword arguments for encoder (default: {})
-      --separator {asteroid,conformer,dan,dc_crn,dccrn,dpcl,dpcl_e2e,dprnn,dptnet,fasnet,rnn,skim,svoice,tcn,transformer,wpe_beamformer,tcn_nomask,ineube,tfgridnet}
+      --separator {asteroid,conformer,dan,dc_crn,dccrn,dpcl,dpcl_e2e,dprnn,dptnet,fasnet,rnn,skim,svoice,tcn,transformer,wpe_beamformer,tcn_nomask,ineube,tfgridnet,tfgridnetv2}
                             The separator type (default: rnn)
       --separator_conf SEPARATOR_CONF
                             The keyword arguments for separator (default: {})
@@ -3558,6 +3671,9 @@ enh_tse_train.py
                             [--wandb_name WANDB_NAME]
                             [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
                             [--detect_anomaly DETECT_ANOMALY]
+                            [--use_lora USE_LORA]
+                            [--save_lora_only SAVE_LORA_ONLY]
+                            [--lora_conf LORA_CONF]
                             [--pretrain_path PRETRAIN_PATH]
                             [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                             [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -3585,6 +3701,7 @@ enh_tse_train.py
                             [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                             [--max_cache_size MAX_CACHE_SIZE]
                             [--max_cache_fd MAX_CACHE_FD]
+                            [--allow_multi_rates ALLOW_MULTI_RATES]
                             [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                             [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                             [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -3610,6 +3727,9 @@ enh_tse_train.py
                             [--force_single_channel FORCE_SINGLE_CHANNEL]
                             [--channel_reordering CHANNEL_REORDERING]
                             [--categories CATEGORIES [CATEGORIES ...]]
+                            [--speech_segment SPEECH_SEGMENT]
+                            [--avoid_allzero_segment AVOID_ALLZERO_SEGMENT]
+                            [--flexible_numspk FLEXIBLE_NUMSPK]
                             [--encoder {stft,conv,same}]
                             [--encoder_conf ENCODER_CONF]
                             [--extractor {td_speakerbeam}]
@@ -3729,6 +3849,11 @@ enh_tse_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -3855,6 +3980,17 @@ enh_tse_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -3959,6 +4095,8 @@ enh_tse_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -3981,7 +4119,7 @@ enh_tse_train.py
       --init {chainer,xavier_uniform,xavier_normal,kaiming_uniform,kaiming_normal,None}
                             The initialization method (default: None)
       --model_conf MODEL_CONF
-                            The keyword arguments for model class. (default: {'num_spk': 1, 'share_encoder': True, 'extract_feats_in_collect_stats': False})
+                            The keyword arguments for model class. (default: {'num_spk': 1, 'flexible_numspk': False, 'share_encoder': True, 'extract_feats_in_collect_stats': False})
       --criterions CRITERIONS
                             The criterions binded with the loss wrappers. (default: [{'name': 'si_snr', 'conf': {}, 'wrapper': 'fixed_order', 'wrapper_conf': {}}])
     
@@ -4023,6 +4161,12 @@ enh_tse_train.py
                             Whether to randomly reorder the channels of the multi-channel signals. (default: False)
       --categories CATEGORIES [CATEGORIES ...]
                             The set of all possible categories in the dataset. Used to add the category information to each sample (default: [])
+      --speech_segment SPEECH_SEGMENT
+                            Truncate the audios (except for the enrollment) to the specified length if not None (default: None)
+      --avoid_allzero_segment AVOID_ALLZERO_SEGMENT
+                            Only used when --speech_segment is specified. If True, make sure all truncated segments are not all-zero (default: True)
+      --flexible_numspk FLEXIBLE_NUMSPK
+                            Whether to load variable numbers of speakers in each sample. In this case, only the first-speaker files such as 'spk1.scp' and 'dereverb1.scp' are used, which are expected to have multiple columns. Other numbered files such as 'spk2.scp' and 'dereverb2.scp' are ignored. (default: False)
       --encoder {stft,conv,same}
                             The encoder type (default: stft)
       --encoder_conf ENCODER_CONF
@@ -4091,6 +4235,9 @@ gan_svs_train.py
                             [--wandb_name WANDB_NAME]
                             [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
                             [--detect_anomaly DETECT_ANOMALY]
+                            [--use_lora USE_LORA]
+                            [--save_lora_only SAVE_LORA_ONLY]
+                            [--lora_conf LORA_CONF]
                             [--pretrain_path PRETRAIN_PATH]
                             [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                             [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -4118,6 +4265,7 @@ gan_svs_train.py
                             [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                             [--max_cache_size MAX_CACHE_SIZE]
                             [--max_cache_fd MAX_CACHE_FD]
+                            [--allow_multi_rates ALLOW_MULTI_RATES]
                             [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                             [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                             [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -4277,6 +4425,11 @@ gan_svs_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -4403,6 +4556,17 @@ gan_svs_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -4507,6 +4671,8 @@ gan_svs_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -4635,6 +4801,9 @@ gan_tts_train.py
                             [--wandb_name WANDB_NAME]
                             [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
                             [--detect_anomaly DETECT_ANOMALY]
+                            [--use_lora USE_LORA]
+                            [--save_lora_only SAVE_LORA_ONLY]
+                            [--lora_conf LORA_CONF]
                             [--pretrain_path PRETRAIN_PATH]
                             [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                             [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -4662,6 +4831,7 @@ gan_tts_train.py
                             [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                             [--max_cache_size MAX_CACHE_SIZE]
                             [--max_cache_fd MAX_CACHE_FD]
+                            [--allow_multi_rates ALLOW_MULTI_RATES]
                             [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                             [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                             [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -4815,6 +4985,11 @@ gan_tts_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -4941,6 +5116,17 @@ gan_tts_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -5045,6 +5231,8 @@ gan_tts_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -5163,8 +5351,9 @@ hubert_train.py
                            [--wandb_id WANDB_ID] [--wandb_entity WANDB_ENTITY]
                            [--wandb_name WANDB_NAME]
                            [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
-                           [--detect_anomaly DETECT_ANOMALY]
-                           [--pretrain_path PRETRAIN_PATH]
+                           [--detect_anomaly DETECT_ANOMALY] [--use_lora USE_LORA]
+                           [--save_lora_only SAVE_LORA_ONLY]
+                           [--lora_conf LORA_CONF] [--pretrain_path PRETRAIN_PATH]
                            [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                            [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
                            [--freeze_param [FREEZE_PARAM [FREEZE_PARAM ...]]]
@@ -5191,6 +5380,7 @@ hubert_train.py
                            [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                            [--max_cache_size MAX_CACHE_SIZE]
                            [--max_cache_fd MAX_CACHE_FD]
+                           [--allow_multi_rates ALLOW_MULTI_RATES]
                            [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                            [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                            [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -5346,6 +5536,11 @@ hubert_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -5472,6 +5667,17 @@ hubert_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -5576,6 +5782,8 @@ hubert_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -5828,7 +6036,8 @@ lm_train.py
                        [--wandb_id WANDB_ID] [--wandb_entity WANDB_ENTITY]
                        [--wandb_name WANDB_NAME]
                        [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
-                       [--detect_anomaly DETECT_ANOMALY]
+                       [--detect_anomaly DETECT_ANOMALY] [--use_lora USE_LORA]
+                       [--save_lora_only SAVE_LORA_ONLY] [--lora_conf LORA_CONF]
                        [--pretrain_path PRETRAIN_PATH]
                        [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                        [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -5856,6 +6065,7 @@ lm_train.py
                        [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                        [--max_cache_size MAX_CACHE_SIZE]
                        [--max_cache_fd MAX_CACHE_FD]
+                       [--allow_multi_rates ALLOW_MULTI_RATES]
                        [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                        [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                        [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -5989,6 +6199,11 @@ lm_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -6115,6 +6330,17 @@ lm_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -6219,6 +6445,8 @@ lm_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -6399,7 +6627,8 @@ mt_train.py
                        [--wandb_id WANDB_ID] [--wandb_entity WANDB_ENTITY]
                        [--wandb_name WANDB_NAME]
                        [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
-                       [--detect_anomaly DETECT_ANOMALY]
+                       [--detect_anomaly DETECT_ANOMALY] [--use_lora USE_LORA]
+                       [--save_lora_only SAVE_LORA_ONLY] [--lora_conf LORA_CONF]
                        [--pretrain_path PRETRAIN_PATH]
                        [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                        [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -6427,6 +6656,7 @@ mt_train.py
                        [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                        [--max_cache_size MAX_CACHE_SIZE]
                        [--max_cache_fd MAX_CACHE_FD]
+                       [--allow_multi_rates ALLOW_MULTI_RATES]
                        [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                        [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                        [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -6579,6 +6809,11 @@ mt_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -6705,6 +6940,17 @@ mt_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -6809,6 +7055,8 @@ mt_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -7061,7 +7309,8 @@ s2st_train.py
                          [--wandb_id WANDB_ID] [--wandb_entity WANDB_ENTITY]
                          [--wandb_name WANDB_NAME]
                          [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
-                         [--detect_anomaly DETECT_ANOMALY]
+                         [--detect_anomaly DETECT_ANOMALY] [--use_lora USE_LORA]
+                         [--save_lora_only SAVE_LORA_ONLY] [--lora_conf LORA_CONF]
                          [--pretrain_path PRETRAIN_PATH]
                          [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                          [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -7089,6 +7338,7 @@ s2st_train.py
                          [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                          [--max_cache_size MAX_CACHE_SIZE]
                          [--max_cache_fd MAX_CACHE_FD]
+                         [--allow_multi_rates ALLOW_MULTI_RATES]
                          [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                          [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                          [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -7260,6 +7510,11 @@ s2st_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -7386,6 +7641,17 @@ s2st_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -7490,6 +7756,8 @@ s2st_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -7672,7 +7940,8 @@ s2t_train.py
                         [--wandb_id WANDB_ID] [--wandb_entity WANDB_ENTITY]
                         [--wandb_name WANDB_NAME]
                         [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
-                        [--detect_anomaly DETECT_ANOMALY]
+                        [--detect_anomaly DETECT_ANOMALY] [--use_lora USE_LORA]
+                        [--save_lora_only SAVE_LORA_ONLY] [--lora_conf LORA_CONF]
                         [--pretrain_path PRETRAIN_PATH]
                         [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                         [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -7700,6 +7969,7 @@ s2t_train.py
                         [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                         [--max_cache_size MAX_CACHE_SIZE]
                         [--max_cache_fd MAX_CACHE_FD]
+                        [--allow_multi_rates ALLOW_MULTI_RATES]
                         [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                         [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                         [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -7851,6 +8121,11 @@ s2t_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -7977,6 +8252,17 @@ s2t_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -8081,6 +8367,8 @@ s2t_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -8215,7 +8503,8 @@ spk_train.py
                         [--wandb_id WANDB_ID] [--wandb_entity WANDB_ENTITY]
                         [--wandb_name WANDB_NAME]
                         [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
-                        [--detect_anomaly DETECT_ANOMALY]
+                        [--detect_anomaly DETECT_ANOMALY] [--use_lora USE_LORA]
+                        [--save_lora_only SAVE_LORA_ONLY] [--lora_conf LORA_CONF]
                         [--pretrain_path PRETRAIN_PATH]
                         [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                         [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -8243,6 +8532,7 @@ spk_train.py
                         [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                         [--max_cache_size MAX_CACHE_SIZE]
                         [--max_cache_fd MAX_CACHE_FD]
+                        [--allow_multi_rates ALLOW_MULTI_RATES]
                         [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                         [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                         [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -8379,6 +8669,11 @@ spk_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -8505,6 +8800,17 @@ spk_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -8609,6 +8915,8 @@ spk_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -8909,7 +9217,8 @@ st_train.py
                        [--wandb_id WANDB_ID] [--wandb_entity WANDB_ENTITY]
                        [--wandb_name WANDB_NAME]
                        [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
-                       [--detect_anomaly DETECT_ANOMALY]
+                       [--detect_anomaly DETECT_ANOMALY] [--use_lora USE_LORA]
+                       [--save_lora_only SAVE_LORA_ONLY] [--lora_conf LORA_CONF]
                        [--pretrain_path PRETRAIN_PATH]
                        [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                        [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -8937,6 +9246,7 @@ st_train.py
                        [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                        [--max_cache_size MAX_CACHE_SIZE]
                        [--max_cache_fd MAX_CACHE_FD]
+                       [--allow_multi_rates ALLOW_MULTI_RATES]
                        [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                        [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                        [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -8950,11 +9260,11 @@ st_train.py
                        [--st_joint_net_conf ST_JOINT_NET_CONF]
                        [--model_conf MODEL_CONF]
                        [--use_preprocessor USE_PREPROCESSOR]
-                       [--token_type {bpe,char,word,phn,hugging_face}]
-                       [--src_token_type {bpe,char,word,phn,none}]
+                       [--token_type {bpe,char,word,phn,hugging_face,whisper_en,whisper_multilingual}]
+                       [--src_token_type {bpe,char,word,phn,none,whisper_en,whisper_multilingual}]
                        [--bpemodel BPEMODEL] [--src_bpemodel SRC_BPEMODEL]
                        [--non_linguistic_symbols NON_LINGUISTIC_SYMBOLS]
-                       [--cleaner {None,tacotron,jaconv,vietnamese}]
+                       [--cleaner {None,tacotron,jaconv,vietnamese,whisper_en,whisper_basic}]
                        [--g2p {None,g2p_en,g2p_en_no_space,pyopenjtalk,pyopenjtalk_kana,pyopenjtalk_accent,pyopenjtalk_accent_with_pause,pyopenjtalk_prosody,pypinyin_g2p,pypinyin_g2p_phone,pypinyin_g2p_phone_without_prosody,espeak_ng_arabic,espeak_ng_german,espeak_ng_french,espeak_ng_spanish,espeak_ng_russian,espeak_ng_greek,espeak_ng_finnish,espeak_ng_hungarian,espeak_ng_dutch,espeak_ng_english_us_vits,espeak_ng_hindi,espeak_ng_italian,espeak_ng_ukrainian,espeak_ng_polish,g2pk,g2pk_no_space,g2pk_explicit_space,korean_jaso,korean_jaso_no_space,g2p_is}]
                        [--src_g2p {None,g2p_en,g2p_en_no_space,pyopenjtalk,pyopenjtalk_kana,pyopenjtalk_accent,pyopenjtalk_accent_with_pause,pyopenjtalk_prosody,pypinyin_g2p,pypinyin_g2p_phone,pypinyin_g2p_phone_without_prosody,espeak_ng_arabic,espeak_ng_german,espeak_ng_french,espeak_ng_spanish,espeak_ng_russian,espeak_ng_greek,espeak_ng_finnish,espeak_ng_hungarian,espeak_ng_dutch,espeak_ng_english_us_vits,espeak_ng_hindi,espeak_ng_italian,espeak_ng_ukrainian,espeak_ng_polish,g2pk,g2pk_no_space,g2pk_explicit_space,korean_jaso,korean_jaso_no_space,g2p_is}]
                        [--speech_volume_normalize SPEECH_VOLUME_NORMALIZE]
@@ -8971,11 +9281,11 @@ st_train.py
                        [--normalize_conf NORMALIZE_CONF]
                        [--preencoder {sinc,linear,None}]
                        [--preencoder_conf PREENCODER_CONF]
-                       [--encoder {conformer,transformer,contextual_block_transformer,contextual_block_conformer,vgg_rnn,rnn,wav2vec2,hubert,hubert_pretrain,branchformer,e_branchformer}]
+                       [--encoder {conformer,transformer,contextual_block_transformer,contextual_block_conformer,vgg_rnn,rnn,wav2vec2,hubert,hubert_pretrain,branchformer,e_branchformer,whisper}]
                        [--encoder_conf ENCODER_CONF]
                        [--postencoder {hugging_face_transformers,length_adaptor,None}]
                        [--postencoder_conf POSTENCODER_CONF]
-                       [--decoder {transformer,transformer_md,lightweight_conv,lightweight_conv2d,dynamic_conv,dynamic_conv2d,rnn,transducer,hugging_face_transformers}]
+                       [--decoder {transformer,transformer_md,lightweight_conv,lightweight_conv2d,dynamic_conv,dynamic_conv2d,rnn,transducer,whisper,hugging_face_transformers}]
                        [--decoder_conf DECODER_CONF]
                        [--extra_asr_decoder {transformer,transformer_md,lightweight_conv,lightweight_conv2d,dynamic_conv,dynamic_conv2d,rnn,None}]
                        [--extra_asr_decoder_conf EXTRA_ASR_DECODER_CONF]
@@ -8987,6 +9297,8 @@ st_train.py
                        [--hier_encoder_conf HIER_ENCODER_CONF]
                        [--extra_mt_encoder {conformer,transformer,contextual_block_transformer,contextual_block_conformer,vgg_rnn,rnn,branchformer,e_branchformer,hugging_face_transformers,None}]
                        [--extra_mt_encoder_conf EXTRA_MT_ENCODER_CONF]
+                       [--preprocessor {default}]
+                       [--preprocessor_conf PREPROCESSOR_CONF]
     
     base parser
     
@@ -9099,6 +9411,11 @@ st_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -9225,6 +9542,17 @@ st_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -9329,6 +9657,8 @@ st_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
@@ -9366,16 +9696,16 @@ st_train.py
     
       --use_preprocessor USE_PREPROCESSOR
                             Apply preprocessing to data or not (default: True)
-      --token_type {bpe,char,word,phn,hugging_face}
+      --token_type {bpe,char,word,phn,hugging_face,whisper_en,whisper_multilingual}
                             The target text will be tokenized in the specified level token (default: bpe)
-      --src_token_type {bpe,char,word,phn,none}
+      --src_token_type {bpe,char,word,phn,none,whisper_en,whisper_multilingual}
                             The source text will be tokenized in the specified level token (default: bpe)
       --bpemodel BPEMODEL   The model file of sentencepiece (for target language) (default: None)
       --src_bpemodel SRC_BPEMODEL
                             The model file of sentencepiece (for source language) (default: None)
       --non_linguistic_symbols NON_LINGUISTIC_SYMBOLS
                             non_linguistic_symbols file path (default: None)
-      --cleaner {None,tacotron,jaconv,vietnamese}
+      --cleaner {None,tacotron,jaconv,vietnamese,whisper_en,whisper_basic}
                             Apply text cleaning (default: None)
       --g2p {None,g2p_en,g2p_en_no_space,pyopenjtalk,pyopenjtalk_kana,pyopenjtalk_accent,pyopenjtalk_accent_with_pause,pyopenjtalk_prosody,pypinyin_g2p,pypinyin_g2p_phone,pypinyin_g2p_phone_without_prosody,espeak_ng_arabic,espeak_ng_german,espeak_ng_french,espeak_ng_spanish,espeak_ng_russian,espeak_ng_greek,espeak_ng_finnish,espeak_ng_hungarian,espeak_ng_dutch,espeak_ng_english_us_vits,espeak_ng_hindi,espeak_ng_italian,espeak_ng_ukrainian,espeak_ng_polish,g2pk,g2pk_no_space,g2pk_explicit_space,korean_jaso,korean_jaso_no_space,g2p_is}
                             Specify g2p method if --token_type=phn (default: None)
@@ -9412,7 +9742,7 @@ st_train.py
                             The preencoder type (default: None)
       --preencoder_conf PREENCODER_CONF
                             The keyword arguments for preencoder (default: {})
-      --encoder {conformer,transformer,contextual_block_transformer,contextual_block_conformer,vgg_rnn,rnn,wav2vec2,hubert,hubert_pretrain,branchformer,e_branchformer}
+      --encoder {conformer,transformer,contextual_block_transformer,contextual_block_conformer,vgg_rnn,rnn,wav2vec2,hubert,hubert_pretrain,branchformer,e_branchformer,whisper}
                             The encoder type (default: rnn)
       --encoder_conf ENCODER_CONF
                             The keyword arguments for encoder (default: {})
@@ -9420,7 +9750,7 @@ st_train.py
                             The postencoder type (default: None)
       --postencoder_conf POSTENCODER_CONF
                             The keyword arguments for postencoder (default: {})
-      --decoder {transformer,transformer_md,lightweight_conv,lightweight_conv2d,dynamic_conv,dynamic_conv2d,rnn,transducer,hugging_face_transformers}
+      --decoder {transformer,transformer_md,lightweight_conv,lightweight_conv2d,dynamic_conv,dynamic_conv2d,rnn,transducer,whisper,hugging_face_transformers}
                             The decoder type (default: rnn)
       --decoder_conf DECODER_CONF
                             The keyword arguments for decoder (default: {})
@@ -9444,6 +9774,10 @@ st_train.py
                             The extra_mt_encoder type (default: None)
       --extra_mt_encoder_conf EXTRA_MT_ENCODER_CONF
                             The keyword arguments for extra_mt_encoder (default: {})
+      --preprocessor {default}
+                            The preprocessor type (default: default)
+      --preprocessor_conf PREPROCESSOR_CONF
+                            The keyword arguments for preprocessor (default: {})
     /home/runner/work/espnet/espnet/tools/venv/lib/python3.8/site-packages/whisper/timing.py:57: NumbaDeprecationWarning: [1mThe 'nopython' keyword argument was not supplied to the 'numba.jit' decorator. The implicit default value for this argument is currently False, but it will be changed to True in Numba 0.59.0. See https://numba.readthedocs.io/en/stable/reference/deprecation.html#deprecation-of-object-mode-fall-back-behaviour-when-using-jit for details.[0m
       def backtrace(trace: np.ndarray):
 .. _tts_inference.py:
@@ -9596,7 +9930,8 @@ tts_train.py
                         [--wandb_id WANDB_ID] [--wandb_entity WANDB_ENTITY]
                         [--wandb_name WANDB_NAME]
                         [--wandb_model_log_interval WANDB_MODEL_LOG_INTERVAL]
-                        [--detect_anomaly DETECT_ANOMALY]
+                        [--detect_anomaly DETECT_ANOMALY] [--use_lora USE_LORA]
+                        [--save_lora_only SAVE_LORA_ONLY] [--lora_conf LORA_CONF]
                         [--pretrain_path PRETRAIN_PATH]
                         [--init_param [INIT_PARAM [INIT_PARAM ...]]]
                         [--ignore_init_mismatch IGNORE_INIT_MISMATCH]
@@ -9624,6 +9959,7 @@ tts_train.py
                         [--allow_variable_data_keys ALLOW_VARIABLE_DATA_KEYS]
                         [--max_cache_size MAX_CACHE_SIZE]
                         [--max_cache_fd MAX_CACHE_FD]
+                        [--allow_multi_rates ALLOW_MULTI_RATES]
                         [--valid_max_cache_size VALID_MAX_CACHE_SIZE]
                         [--exclude_weight_decay EXCLUDE_WEIGHT_DECAY]
                         [--exclude_weight_decay_conf EXCLUDE_WEIGHT_DECAY_CONF]
@@ -9769,6 +10105,11 @@ tts_train.py
                             Set the model log period (default: -1)
       --detect_anomaly DETECT_ANOMALY
                             Set torch.autograd.set_detect_anomaly (default: False)
+      --use_lora USE_LORA   Enable LoRA based finetuning, see (https://arxiv.org/abs/2106.09685) for large pre-trained foundation models, like Whisper (default: False)
+      --save_lora_only SAVE_LORA_ONLY
+                            Only save LoRA parameters or save all model parameters (default: True)
+      --lora_conf LORA_CONF
+                            Configuration for LoRA based finetuning (default: {})
     
     Pretraining model related:
       --pretrain_path PRETRAIN_PATH
@@ -9895,6 +10236,17 @@ tts_train.py
                                utterance_id_b b.wav b2.wav
                                ...
                             
+                            "variable_columns_sound":
+                            Loading variable numbers (columns) of audios in wav.scp. The following text file can be loaded as stacked audio data
+                            
+                               utterance_id_a a1.wav a2.wav a3.wav
+                               utterance_id_b b1.wav
+                               utterance_id_c c1.wav c2.wav
+                               ...
+                            
+                            Note that audios of different lengths will be right-padded with np.nan to the longest audio in the sample.
+                            A preprocessor must be used to remove these paddings.
+                            
                             "score":
                             Return text as is. The text contains tempo and note info.
                             For each note, 'start' 'end' 'syllabel' 'midi' and 'phones' are included. 
@@ -9999,6 +10351,8 @@ tts_train.py
                             The maximum cache size for data loader. e.g. 10MB, 20GB. (default: 0.0)
       --max_cache_fd MAX_CACHE_FD
                             The maximum number of file descriptors to be kept as opened for ark files. This feature is only valid when data type is 'kaldi_ark'. (default: 32)
+      --allow_multi_rates ALLOW_MULTI_RATES
+                            Whether to allow audios to have different sampling rates (default: False)
       --valid_max_cache_size VALID_MAX_CACHE_SIZE
                             The maximum cache size for validation data loader. e.g. 10MB, 20GB. If None, the 5 percent size of --max_cache_size (default: None)
     
