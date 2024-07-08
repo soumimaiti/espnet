@@ -53,7 +53,7 @@ max_wav_duration=20  # Maximum duration in second.
 
 # Kmeans related
 km_dir=                     # Path to pretrained kmeans model
-learn_kmeans=true           # boolean flag to note whether to learn kmeans
+learn_kmeans=false           # boolean flag to note whether to learn kmeans
 kmeans_opts=                # The options given to scripts/feats/perform_kmeans.sh, needed when kmeans is trained
 kmeans_feature="hubert_base/6" # format: ssl_model_type/layer_idx (e.g. mfcc, hubert_large/21, wavlm_large/21), needed when kmeans is trained
 portion=0.1
@@ -100,6 +100,7 @@ lm_test_text_asr=    # Text file path of asr evaluation set.
 lm_test_text_tts=    # Text file path of tts evaluation set.
 lm_test_text_textlm="dummy"    # Text file path of textlm evaluation set.
 lm_test_text_speechlm="dummy"    # Text file path of unitlm evaluation set.
+lm_test_text_tts_lm="dummy"     # Text file path of tts evaluation set with teacher forcing.
 lm_inference_asr_config=    # Config for decoding asr.
 lm_inference_tts_config=    # Config for decoding tts.
 lang=noinfo      # The language type of corpus.
@@ -110,6 +111,7 @@ lm_fold_length=150      # fold_length for LM training.
 # Language Model specific parameters
 use_speech=true
 use_text=true
+use_cycle=false # Whether to use cycle consistency loss
 
 help_message=$(cat << EOF
 Usage: $0 --train-set "<train_set_name>" --valid-set "<valid_set_name>" --test_sets "<test_set_names>"
@@ -480,6 +482,15 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ] && ! [[ " ${skip_stages} " =~ [
         done
     fi
 
+    if "${use_cycle}"; then
+        if "${use_speech}" && "${use_text}"; then
+            for dset in "${train_set}"; do
+                echo $dset
+                python3 local/prepare_lm_data_gen.py --path ${data_feats}/${dset}
+            done
+        fi
+    fi
+    
     # Create testset
     for _dset in ${test_sets}; do
         python3 local/prepare_lm_test.py --test_file "${data_feats}/${_dset}/lm_text" --path "${data_feats}/${_dset}"
@@ -590,6 +601,16 @@ if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ] && ! [[ " ${skip_stages} " =~ [
     done
     # shellcheck disable=SC2086
     utils/split_scp.pl "${key_file}" ${split_scps}
+    
+    if "${use_cycle}"; then
+        # create task id 
+        echo "Creating task id from ${data_feats}"
+        python3 local/create_task_file.py "${data_feats}"
+
+        # To add cycle consistency
+        _opts+="--train_data_path_and_name_and_type ${data_feats}/train/text_taskid,text_taskid,text_int "
+        _opts+="--valid_data_path_and_name_and_type ${data_feats}/valid/text_taskid,text_taskid,text_int "
+    fi
 
     # 2. Generate run.sh
     log "Generate '${lm_stats_dir}/run.sh'. You can resume the process from stage 6 using this script"
@@ -633,6 +654,11 @@ if [ ${stage} -le 6 ] && [ ${stop_stage} -ge 6 ] && ! [[ " ${skip_stages} " =~ [
     <"${lm_stats_dir}/valid/text_shape" \
         awk -v N="$(<${token_list} wc -l)" '{ print $0 "," N }' \
         >"${lm_stats_dir}/valid/text_shape.${token_type}"
+
+    if "${use_cycle}"; then
+        echo "Calling adjust length ${lm_stats_dir}"
+        ./local/dummy_adjust.sh "${lm_stats_dir}"
+    fi
 fi
 
 
@@ -667,9 +693,19 @@ if [ ${stage} -le 7 ] && [ ${stop_stage} -ge 7 ] && ! [[ " ${skip_stages} " =~ [
         _opts+="--train_shape_file ${_split_dir}/text_shape.${token_type} "
         _opts+="--multiple_iterator true "
 
+        if "${use_cycle}"; then
+            _opts+="--train_data_path_and_name_and_type ${_split_dir}/text_taskid,text_taskid,text_int  "
+            _opts+="--valid_data_path_and_name_and_type ${data_feats}/valid/text_taskid,text_taskid,text_int "
+        fi
+
     else
         _opts+="--train_data_path_and_name_and_type ${data_feats}/lm_train.txt,text,text "
         _opts+="--train_shape_file ${lm_stats_dir}/train/text_shape.${token_type} "
+
+        if "${use_cycle}"; then
+            _opts+="--train_data_path_and_name_and_type ${data_feats}/train/text_taskid,text_taskid,text_int "
+            _opts+="--valid_data_path_and_name_and_type ${data_feats}/valid/text_taskid,text_taskid,text_int "
+        fi
     fi
 
     # NOTE(kamo): --fold_length is used only if --batch_type=folded and it's ignored in the other case
@@ -747,6 +783,26 @@ if [ ${stage} -le 8 ] && [ ${stop_stage} -ge 8 ] && ! [[ " ${skip_stages} " =~ [
                 --output_dir "${_output_dir}" \
                 ${_opts}
         log "PPL: ${lm_test_text_speechlm}: $(cat ${_output_dir}/ppl)"
+    fi
+
+    #tts
+    if [ -f ${lm_test_text_tts_lm} ]; then
+        log "Stage 8c: Calc perplexity for TTS: ${lm_test_text_tts_lm}"
+        _opts=
+        _output_dir="${lm_exp}/perplexity_test_tts"
+        _ngpu=1
+        log "Perplexity calculation started... log: '${_output_dir}/lm_calc_perplexity_prefix.log'"
+        # shellcheck disable=SC2086
+        ${cuda_cmd} --gpu "${_ngpu}" "${lm_exp}"/perplexity_test_tts/lm_calc_perplexity_prefix.log \
+            ${python} -m espnet2.bin.lm_calc_perplexity_prefix \
+                --ngpu "${_ngpu}" \
+                --data_path_and_name_and_type "${lm_test_text_tts_lm},text,text" \
+                --data_path_and_name_and_type "${lm_test_text_tts},prefix,text" \
+                --train_config "${lm_exp}"/config.yaml \
+                --model_file "${lm_exp}/${inference_lm}" \
+                --output_dir "${_output_dir}/$(basename ${lm_test_text_tts})" \
+                ${_opts}
+        log "PPL: ${lm_test_text_tts}: $(cat ${_output_dir}/ppl)"
     fi
 fi
 

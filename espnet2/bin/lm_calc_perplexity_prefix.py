@@ -8,7 +8,7 @@ from typing import Optional, Sequence, Tuple, Union
 import numpy as np
 import torch
 from torch.nn.parallel import data_parallel
-from typeguard import typechecked
+from typeguard import check_argument_types
 
 from espnet2.fileio.datadir_writer import DatadirWriter
 from espnet2.tasks.lm import LMTask
@@ -20,8 +20,7 @@ from espnet2.utils.types import float_or_none, str2bool, str2triple_str, str_or_
 from espnet.utils.cli_utils import get_commandline_args
 
 
-@typechecked
-def calc_perplexity(
+def calc_perplexity_prefix(
     output_dir: str,
     batch_size: int,
     dtype: str,
@@ -35,7 +34,9 @@ def calc_perplexity(
     model_file: Optional[str],
     log_base: Optional[float],
     allow_variable_data_keys: bool,
+    prefix_sym="<generatespeech>",
 ):
+    assert check_argument_types()
     logging.basicConfig(
         level=log_level,
         format="%(asctime)s (%(module)s:%(lineno)d) %(levelname)s: %(message)s",
@@ -73,19 +74,22 @@ def calc_perplexity(
     with DatadirWriter(output_dir) as writer:
         total_nll = 0.0
         total_ntokens = 0
+        total_acc = 0.0
+        n_acc = 0
         for keys, batch in loader:
             assert isinstance(batch, dict), type(batch)
             assert all(isinstance(s, str) for s in keys), keys
             _bs = len(next(iter(batch.values())))
             assert len(keys) == _bs, f"{len(keys)} != {_bs}"
 
+            # logging.info("batch: {}".format(batch))
             with torch.no_grad():
                 batch = to_device(batch, device)
                 if ngpu <= 1:
                     # NOTE(kamo): data_parallel also should work with ngpu=1,
                     # but for debuggability it's better to keep this block.
-                    # dummy change to allow for return accuracy
-                    nll, lengths, _ = wrapped_model(**batch)
+                    # nll, lengths = wrapped_model(**batch)
+                    nll, lengths, acc = wrapped_model(**batch)
                 else:
                     nll, lengths = data_parallel(
                         wrapped_model, (), range(ngpu), module_kwargs=batch
@@ -99,9 +103,14 @@ def calc_perplexity(
             total_nll += nll.sum()
             total_ntokens += lengths.sum()
 
+            # acc = acc.sum(1)
+            total_acc += acc  # .sum()
+            n_acc += 1
             for key, _nll, ntoken in zip(keys, nll, lengths):
                 if log_base is None:
-                    utt_ppl = np.exp(_nll / ntoken)
+                    # utt_ppl = np.exp(_nll / ntoken)
+                    utt_ppl = _nll / ntoken
+                    # utt_acc = (_acc / ntoken)
                 else:
                     utt_ppl = log_base ** (_nll / ntoken / np.log(log_base))
 
@@ -123,6 +132,11 @@ def calc_perplexity(
                 _log_base = log_base
             f.write(f"{_log_base}\n")
         logging.info(f"PPL={ppl}")
+
+        acc = total_acc / n_acc  # total_acc / total_ntokens
+        logging.info(f"ACC={acc}")
+        with (Path(output_dir) / "acc").open("w", encoding="utf-8") as f:
+            f.write(f"{acc}\n")
 
 
 def get_parser():
@@ -198,7 +212,7 @@ def main(cmd=None):
     args = parser.parse_args(cmd)
     kwargs = vars(args)
     kwargs.pop("config", None)
-    calc_perplexity(**kwargs)
+    calc_perplexity_prefix(**kwargs)
 
 
 if __name__ == "__main__":

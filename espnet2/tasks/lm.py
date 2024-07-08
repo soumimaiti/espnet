@@ -159,6 +159,7 @@ class LMTask(AbsTask):
                 text_cleaner=args.cleaner,
                 g2p_type=args.g2p,
                 non_linguistic_symbols=args.non_linguistic_symbols,
+                aux_task_names=["prefix"],
             )
         else:
             retval = None
@@ -175,7 +176,7 @@ class LMTask(AbsTask):
     def optional_data_names(
         cls, train: bool = True, inference: bool = False
     ) -> Tuple[str, ...]:
-        retval = ()
+        retval = ("text_taskid", "prefix")
         return retval
 
     @classmethod
@@ -207,7 +208,7 @@ class LMTask(AbsTask):
         try:
             model_class = model_choices.get_class(args.model)
             if args.model == "lm_multitask":
-                extra_model_conf = dict(token_list=token_list)
+                extra_model_conf = dict(token_list=token_list, bpemodel=args.bpemodel)
             else:
                 extra_model_conf = dict()
         except AttributeError:

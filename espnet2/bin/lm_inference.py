@@ -178,6 +178,7 @@ class GenerateText:
                 list(converter.tokenizer.sot_sequence_including_notimestamps)
             )
         logging.info(f"Text tokenizer: {tokenizer}")
+        logging.info(f"Token list {token_list}")
 
         self.lm = lm
         self.lm_train_args = lm_train_args
